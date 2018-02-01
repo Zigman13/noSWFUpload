@@ -8,7 +8,7 @@ var $ = {
      * @blog            webreflection.blogspot.com
      * @license         Mit Style License
      */
-    
+
     /**
      * @description load dedicated CSS (avoid CSS download for browsers with JavaScript disabled)
      * @param       String      main noswfupload css file (the wrap)
@@ -25,7 +25,7 @@ var $ = {
         head.insertBefore(style, head.firstChild);
         return  icons ? $.css(icons) : $;
     },
-    
+
     // DOM event add, del, stop Helper
     event:{
 
@@ -78,7 +78,8 @@ var $ = {
             lastInput = wrap.dom.input;
             $.event.del(wrap.dom.input, "change", arguments.callee);
             for(var max = false, input = wrap.dom.input.cloneNode(true), i = 0, files = $.files(wrap.dom.input); i < files.length; i++){
-                var value   = files.item(i).fileName || (files.item(i).fileName = files.item(i).value.split("\\").pop()),
+//                var value   = files.item(i).fileName || (files.item(i).fileName = files.item(i).value.split("\\").pop()),
+                var value   = files.item(i).name,
                     ext     = -1 !== value.indexOf(".") ? value.split(".").pop().toLowerCase() : "unknown";
                 if(wrap.fileType && -1 === wrap.fileType.indexOf("*." + ext)){
                     max = true;
@@ -88,21 +89,21 @@ var $ = {
                             .replace(/{fileType}/g, wrap.fileType)
                             .replace(/{fileName}/g, value)
                     );
-                } else if(wrap.maxSize !== -1 && files.item(i).fileSize && wrap.maxSize < files.item(i).fileSize){
+                } else if(wrap.maxSize !== -1 && files.item(i).size && wrap.maxSize < files.item(i).size){
                     max = true;
                     $.text(
                         wrap.dom.info,
                         $.lang.errorSize
                             .replace(/{maxSize}/g, $.size(wrap.maxSize))
                             .replace(/{fileName}/g, value)
-                            .replace(/{fileSize}/g, $.size(files.item(i).fileSize))
+                            .replace(/{fileSize}/g, $.size(files.item(i).size))
                     );
                 } else {
                     var li  = document.createElement("li"),
                         a   = li.appendChild(document.createElement("a"));
                     wrap.files.unshift(files.item(i));
                     a.href = "#" + value;
-                    a.alt = a.title = (files.item(i).fileSize ? "[" + $.size(files.item(i).fileSize) + "] " : "") + value;
+                    a.alt = a.title = (files.item(i).size ? "[" + $.size(files.item(i).size) + "] " : "") + value;
                     li.className = ext;
                     $.text(a, value);
                     $.event
@@ -111,7 +112,7 @@ var $ = {
                             return function(e){
                                 for(var i = 0, childNodes = li.parentNode.getElementsByTagName("li"); i < childNodes.length; i++){
                                     if(childNodes[i] === li){
-                                        var value = wrap.files[i].fileName;
+                                        var value = wrap.files[i].name;
                                         $.event
                                             .del(li, "click", $.empty)
                                             .del(li, "dblclick", arguments.callee)
@@ -127,8 +128,8 @@ var $ = {
                             };
                         })(li))
                     ;
-                    if(typeof files.item(i).fileSize != "number")
-                        files.item(i).fileSize = -1;
+                    if(typeof files.item(i).size != "number")
+                        files.item(i).size = -1;
                     if(wrap.dom.ul.firstChild)
                         wrap.dom.ul.insertBefore(li, wrap.dom.ul.firstChild);
                     else
@@ -151,7 +152,7 @@ var $ = {
      * @return      Boolean     false
      */
     empty:function(e){return $.event.stop(e);},
-    
+
     /**
      * @description normalize input.files. create if not present, add item method if not present
      * @param       Object      generated wrap object
@@ -165,24 +166,24 @@ var $ = {
             return  files;
         };
     })(function(i){return this[i];}),
-    
+
     // showed message, change for local language messages
     // brackets properties are replaced
     lang:{
-    
+
         // after one or more file has been added
-        removeFile:"Double click to remove a file",
-        
+        removeFile:"Двойной клик по файлу - для удаления",
+
         // after a file has been removed
-        removedFile:"File {fileName} removed",
-        
+        removedFile:"Файл {fileName} удален",
+
         // file over maxSize parameter
-        errorSize:"WARNING - Maximum size is {maxSize}. File {fileName} is {fileSize}",
-        
+        errorSize:"ВНИМАНИЕ - Максимальный размер файла {maxSize}. Вы пытаетесь загрузить файл размером {fileSize}",
+
         // file without a valid type
-        errorType:"WARNING - File {fileName} has not a valid type: {fileType}"
+        errorType:"Внимание - Файлы с типом {fileType} нельзя загружать"
     },
-    
+
     /**
      * @description send a single file via XMLHttpRequest, if possible, or iframe in every other case.
      * @param       Object      handler used to perform operations (for example, a wrap Object)
@@ -193,7 +194,7 @@ var $ = {
         var multipart = function(boundary, name, file){
                 return  "--".concat(
                     boundary, CRLF,
-                    'Content-Disposition: form-data; name="', name, '"; filename="', file.fileName, '"', CRLF,
+                    'Content-Disposition: form-data; name="', name, '"; filename="', file.name, '"', CRLF,
                     "Content-Type: application/octet-stream", CRLF,
                     CRLF,
                     file.getAsBinary(), CRLF,
@@ -206,11 +207,11 @@ var $ = {
             CRLF        = "\r\n",
             xhr = this.XMLHttpRequest ? new XMLHttpRequest : new ActiveXObject("Microsoft.XMLHTTP"),
             sendFile;
-        
+
         // FireFox 3+, Safari 4 beta (Chrome 2 beta file is buggy and will not work)
         if(xhr.upload || xhr.sendAsBinary)
             sendFile = function(handler, maxSize){
-                if(-1 < maxSize && maxSize < handler.file.fileSize){
+                if(-1 < maxSize && maxSize < handler.file.size){
                     if(isFunction(handler.onerror))
                         handler.onerror();
                     return;
@@ -252,7 +253,7 @@ var $ = {
                 );
                 xhr.open("post", handler.url, true);
                 if(!xhr.upload){
-                    var rpe      = {loaded:0, total:handler.file.fileSize, simulation:true};
+                    var rpe      = {loaded:0, total:handler.file.size, simulation:true};
                     rpe.interval    = setInterval(function(){
                         rpe.loaded += 1024 / 4;
                         if(rpe.total <= rpe.loaded)
@@ -291,7 +292,7 @@ var $ = {
                 } else {
                     xhr.setRequestHeader("Content-Type", "multipart/form-data");
                     xhr.setRequestHeader("X-Name", handler.name);
-                    xhr.setRequestHeader("X-Filename", handler.file.fileName);
+                    xhr.setRequestHeader("X-Filename", handler.file.name);
                     xhr.send(handler.file);
                 };
                 return  handler;
@@ -325,12 +326,13 @@ var $ = {
                     },
                     target  = ["AjaxUpload", (new Date).getTime(), String(Math.random()).substring(2)].join("_");
                 try { // IE < 8 does not accept enctype attribute ...
-                    var form    = document.createElement('<form enctype="multipart/form-data"></form>'),
+                    var form    = document.createElement('<form enctype="multipart/form-data" accept="image/*,image/jpeg"></form>'),
                         iframe  = handler.iframe || (handler.iframe = document.createElement('<iframe id="' + target + '" name="' + target + '" src="' + url + '"></iframe>'));
                 } catch(e) {
                     var form    = document.createElement('form'),
                         iframe  = handler.iframe || (handler.iframe = document.createElement("iframe"));
                     form.setAttribute("enctype", "multipart/form-data");
+                    form.setAttribute("accept", "image/*,image/jpeg");
                     iframe.setAttribute("name", iframe.id = target);
                     iframe.setAttribute("src", url);
                 };
@@ -354,7 +356,7 @@ var $ = {
                 form.setAttribute("target", iframe.id);
                 form.setAttribute("method", "post");
                 form.appendChild(handler.file);
-                form.style.display = "none";
+				form.style.display = "none";
                 if(isFunction(handler.onloadstart))
                     handler.onloadstart(rpe, {});
                 with(document.body || document.documentElement){
@@ -382,13 +384,13 @@ var $ = {
         handler.total = 0;
         handler.sent = 0;
         while(handler.current < length)
-            handler.total += handler.files[handler.current++].fileSize;
+            handler.total += handler.files[handler.current++].size;
         handler.current = 0;
-        if(length && handler.files[0].fileSize !== -1){
+        if(length && handler.files[0].size !== -1){
             handler.file = handler.files[handler.current];
             $.sendFile(handler, maxSize).onload = function(rpe, xhr){
                 handler.onloadstart = null;
-                handler.sent += handler.files[handler.current].fileSize;
+                handler.sent += handler.files[handler.current].size;
                 if(++handler.current < length){
                     handler.file = handler.files[handler.current];
                     $.sendFile(handler, maxSize).onload = arguments.callee;
@@ -427,7 +429,7 @@ var $ = {
         };
         return  handler;
     },
-    
+
     /**
      * @description return a human friendly size
      * @param       Number      total bytes
@@ -474,10 +476,10 @@ var $ = {
             ul      = document.createElement("ul"),
             info    = total.cloneNode(true)
         ;
-        
         // be sure input accept multiple files
         input.setAttribute("multiple", "multiple");
-        
+		input.setAttribute("accept", "image/*,image/jpeg");
+
         // created structure swapped with the input
         // <div class="noswfupload">
         //     <input type="file" multiple="multiple" name="{fileName}" />
@@ -494,7 +496,7 @@ var $ = {
             appendChild(ul);
             appendChild(info);
         };
-        
+
         wrap.className  = className;
         total.className = "total";
         current.className = "current";
@@ -502,10 +504,10 @@ var $ = {
         total.style.visibility = current.style.visibility = "hidden";
         wrap.insertBefore(input.parentNode.replaceChild(wrap, input), total);
         input.value = "";
-        
+
         // wrap Object
         return  $.events({
-        
+
             // DOM namespace
             dom:{
                 wrap:wrap,          // wrap div
@@ -520,13 +522,13 @@ var $ = {
                                     // maxSize is the maximum amount of bytes for each file
             maxSize:maxSize ? maxSize >> 0 : -1,
             files:[],               // file list
-            
+
             // remove every file from the noswfupload component
             clean:function(){
                 while(this.files.length)
                     this.files[0].remove();
             },
-            
+
             // upload one file a time (which make progress possible rather than all files in one shot)
             // the handler is an object injected into the wrap one, could be the wrap itself or
             // something like {onload:function(){alert("OK")},onerror:function(){alert("Error")}, etc ...}
@@ -538,7 +540,7 @@ var $ = {
                 $.sendFiles(this, this.maxSize);
                 return  this;
             },
-            
+
             // hide progress bar (total + current) and enable files selection
             hide:function(){
                 if(this.dom.disabled){
